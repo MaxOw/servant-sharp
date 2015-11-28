@@ -1,0 +1,32 @@
+name:              servant-sharp
+version:           0.1.0
+synopsis:          Automatically derive CSharp functions to query servant webservices.
+description:
+  Automatically derive CSharp functions to query servant webservices.
+license:           BSD3
+license-file:      LICENSE
+author:            Maksymilian Owsianny
+maintainer:        Maksymilian.Owsianny@gmail.com
+copyright:         2015 Maksymilian Owsianny
+category:          Web
+cabal-version:     >= 1.10
+build-type:        Simple
+homepage:          http://github.com/MaxOw/servant-sharp
+bug-reports:       http://github.com/MaxOw/servant-sharp/issues
+
+source-repository head
+  type: git
+  location: http://github.com/MaxOw/servant-sharp.git
+
+library
+  default-language: Haskell2010
+  hs-source-dirs:   src
+  exposed-modules:  Servant.Sharp
+  ghc-options:      -Wall
+
+  build-depends: base            >= 4.5 && < 5
+               , lens            >= 4        
+               , text    
+               , pretty
+               , servant-foreign >= 0.5.1 && < 0.6
+
