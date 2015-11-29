@@ -2,7 +2,7 @@
 {-# Language TypeOperators     #-}
 {-# Language FlexibleContexts  #-}
 {-# Language ScopedTypeVariables #-}
-{-# OPTIONS_GHC -fno-warn-orphans #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 module Servant.Sharp
   ( csharp
   , csharpForAPI
@@ -19,30 +19,33 @@ import Text.PrettyPrint hiding ((<>))
 import Data.Monoid ((<>))
 import Servant.Foreign
 
+-- Dummy type specifying target language
+data LangCSharp
+
 ----------------------------------------------------------------------
 
-csharp :: HasForeign layout => Proxy layout -> Foreign layout
-csharp p = foreignFor p defReq
+csharp :: HasForeign LangCSharp layout => Proxy layout -> Foreign layout
+csharp p = foreignFor (Proxy :: Proxy LangCSharp) p defReq
 
-csharpForAPI :: (HasForeign api, GenerateList (Foreign api))
+csharpForAPI :: (HasForeign LangCSharp api, GenerateList (Foreign api))
     => Proxy api -> NamespaceName -> Text
 csharpForAPI p n = generateCSharpNamespace n (listFromAPI p)
 
-writeCSharpForAPI :: (HasForeign api, GenerateList (Foreign api))
+writeCSharpForAPI :: (HasForeign LangCSharp api, GenerateList (Foreign api))
     => Proxy api -> NamespaceName -> IO ()
 writeCSharpForAPI p n = Text.writeFile (n ++ ".cs") $ csharpForAPI p n
 
 ----------------------------------------------------------------------
 -- CSharp Types
 
-instance HasForeignType Int where
-    typeFor _ = "int"
-instance HasForeignType Bool where
-    typeFor _ = "bool"
-instance HasForeignType Text where
-    typeFor _ = "string"
-instance HasForeignType a => HasForeignType [a] where
-    typeFor _ = "IEnumerable<" <> (typeFor (Proxy :: Proxy a)) <> ">"
+instance HasForeignType LangCSharp Int where
+    typeFor _ _ = "int"
+instance HasForeignType LangCSharp Bool where
+    typeFor _ _ = "bool"
+instance HasForeignType LangCSharp Text where
+    typeFor _ _ = "string"
+instance HasForeignType LangCSharp a => HasForeignType LangCSharp [a] where
+    typeFor lang _ = "IEnumerable<" <> (typeFor lang (Proxy :: Proxy a)) <> ">"
 
 ----------------------------------------------------------------------
 -- CSharp Code Generator
@@ -109,7 +112,7 @@ generateCSharpMethod req = vcat
     segments (x:xs) = segmentToStr x False <> segments xs
 
     segmentToStr (Segment (Static s)) _ = "/" <> txt s
-    segmentToStr (Segment (Cap s)) end = 
+    segmentToStr (Segment (Cap s)) _ = 
         "/\" + Uri.EscapeDataString("
         <> txt (fst s) <> ".ToString())"
         <> " + \""
@@ -176,6 +179,7 @@ generateCSharpMethod req = vcat
         ]
 
 -- indentation size
+indent :: Int
 indent = 2
 
 cbraces :: Doc -> Doc
@@ -210,5 +214,5 @@ instance GenerateList Req where
 instance (GenerateList r, GenerateList rs) => GenerateList (r :<|> rs) where
     generateList (r :<|> rs) = (generateList r) ++ (generateList rs)
 
-listFromAPI :: (HasForeign api, GenerateList (Foreign api)) => Proxy api -> [Req]
+listFromAPI :: (HasForeign LangCSharp api, GenerateList (Foreign api)) => Proxy api -> [Req]
 listFromAPI p = generateList (csharp p)
